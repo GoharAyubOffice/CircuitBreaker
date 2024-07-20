@@ -25,10 +25,8 @@ public class PlayerShooting : MonoBehaviour
             return;
         }
 
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePosition.z = 0;
-
-        Vector2 direction = (mousePosition - firePoint.position).normalized;
+        // The fire point should be aligned with the gun's end
+        Vector2 direction = (Camera.main.ScreenToWorldPoint(Input.mousePosition) - firePoint.position).normalized;
 
         GameObject projectile = Instantiate(projectilePrefab, firePoint.position, Quaternion.identity);
         Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
