@@ -1,54 +1,80 @@
 using UnityEngine;
-using TMPro;
+using TMPro; // Import TextMeshPro namespace
+using UnityEngine.SceneManagement; // For reloading the scene
+using System.Collections;
 
 public class GameTimer : MonoBehaviour
 {
-    public TextMeshProUGUI timerText; // Reference to the TextMeshProUGUI element
-    public float timeLimit = 300f; // Time limit in seconds (e.g., 5 minutes)
-    private float timeRemaining;
-    private bool timerActive = true;
+    public float timeRemaining = 300f; // Example: 5 minutes
+    public TextMeshProUGUI timerText; // Reference to the TextMeshProUGUI component
+    public Transform hostagesPosition; // Reference to the hostages' position
+    public Camera mainCamera; // Reference to the main camera
+    public GameObject explosionPrefab; // Reference to the explosion prefab
+    public GameObject hostages; // Reference to the hostages GameObject
+    public GameObject missionFailedUI; // Reference to the Mission Failed UI GameObject
 
-    private void Start()
-    {
-        timeRemaining = timeLimit;
-        UpdateTimerDisplay();
-    }
+    private bool isTimerRunning = true;
+    private bool isEndSequenceTriggered = false;
 
-    private void Update()
+    void Update()
     {
-        if (timerActive)
+        if (isTimerRunning)
         {
-            timeRemaining -= Time.deltaTime;
-            if (timeRemaining <= 0)
+            if (timeRemaining > 0)
             {
-                timeRemaining = 0;
-                TimerEnded();
+                timeRemaining -= Time.deltaTime;
+                UpdateTimerText();
             }
-            UpdateTimerDisplay();
+            else
+            {
+                if (!isEndSequenceTriggered)
+                {
+                    TriggerEndSequence();
+                }
+                isTimerRunning = false;
+            }
         }
     }
 
-    private void UpdateTimerDisplay()
+    void UpdateTimerText()
     {
-        // Format the time as minutes:seconds
-        int minutes = Mathf.FloorToInt(timeRemaining / 60);
-        int seconds = Mathf.FloorToInt(timeRemaining % 60);
-        timerText.text = $"Explosion Time: {minutes:00}:{seconds:00}";
+        float minutes = Mathf.FloorToInt(timeRemaining / 60);
+        float seconds = Mathf.FloorToInt(timeRemaining % 60);
+        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
-    private void TimerEnded()
+    void TriggerEndSequence()
     {
-        timerActive = false;
-        timerText.text = "Time's Up!"; // Optionally update the text when time ends
-        // Optionally trigger game over or end scenario here
+        isEndSequenceTriggered = true;
+        StartCoroutine(MoveCameraAndExplode());
     }
 
-    // Call this method to reset the timer if needed
-    public void ResetTimer(float newTimeLimit)
+    IEnumerator MoveCameraAndExplode()
     {
-        timeLimit = newTimeLimit;
-        timeRemaining = timeLimit;
-        timerActive = true;
-        UpdateTimerDisplay();
+        // Smoothly move the camera to the hostages' position
+        float duration = 2f; // Duration of the camera movement
+        Vector3 startPosition = mainCamera.transform.position;
+        Vector3 targetPosition = new Vector3(hostagesPosition.position.x, hostagesPosition.position.y, mainCamera.transform.position.z);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            mainCamera.transform.position = Vector3.Lerp(startPosition, targetPosition, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Trigger explosion and disable hostages
+        Instantiate(explosionPrefab, hostages.transform.position, Quaternion.identity);
+        hostages.SetActive(false);
+
+        // Display mission failed UI
+        missionFailedUI.SetActive(true);
+    }
+
+    public void PlayAgain()
+    {
+        // Reload the current scene
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

@@ -2,15 +2,16 @@ using UnityEngine;
 
 public class EnemyShooting : MonoBehaviour
 {
-    public GameObject projectilePrefab; // The projectile prefab that the enemy will shoot
-    public Transform firePoint; // The point from where the projectile will be fired
-    public float shootInterval = 2f; // Interval between shots
-    public float stopDistance = 3f; // Distance at which the enemy will stop and shoot
-    public float projectileLifetime = 5f; // Time in seconds before the projectile is destroyed
+    public GameObject projectilePrefab;
+    public Transform firePoint;
+    public float shootInterval = 2f;
+    public float stopDistance = 3f;
+    public float moveSpeed = 2f;
+    public float projectileSpeed = 10f;
 
-    private Transform player; // Reference to the player's transform
-    private float nextShootTime = 0f; // Time when the enemy can shoot next
-    private bool isShooting = false; // To track if the enemy is currently shooting
+    private Transform player;
+    private float nextShootTime = 0f;
+    private Rigidbody2D rb;
 
     void Start()
     {
@@ -20,35 +21,30 @@ public class EnemyShooting : MonoBehaviour
         {
             Debug.LogWarning("Player not found! Ensure the player GameObject is tagged correctly.");
         }
+
+        rb = GetComponent<Rigidbody2D>();
     }
 
     void Update()
     {
         if (player == null) return;
 
-        // Calculate distance to the player
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
 
         if (distanceToPlayer <= stopDistance)
         {
-            // Stop movement and shoot if it's time to shoot
-            if (!isShooting)
-            {
-                isShooting = true;
-                StopAndShoot();
-            }
+            StopAndShoot();
         }
         else
         {
-            // Move towards the player if not within stop distance
-            isShooting = false;
             MoveTowardsPlayer();
         }
     }
 
     public void StopAndShoot()
     {
-        // Check if it's time to shoot
+        rb.velocity = Vector2.zero;
+
         if (Time.time >= nextShootTime)
         {
             Shoot();
@@ -58,11 +54,11 @@ public class EnemyShooting : MonoBehaviour
 
     void MoveTowardsPlayer()
     {
-        // Implement movement towards the player if needed
-        // You can call the movement logic here
+        Vector2 direction = (player.position - transform.position).normalized;
+        rb.velocity = direction * moveSpeed;
     }
 
-    public void Shoot() 
+    void Shoot()
     {
         if (projectilePrefab == null || firePoint == null)
         {
@@ -70,16 +66,19 @@ public class EnemyShooting : MonoBehaviour
             return;
         }
 
-        // Instantiate and shoot the projectile
         GameObject projectile = Instantiate(projectilePrefab, firePoint.position, Quaternion.identity);
         Vector2 direction = (player.position - firePoint.position).normalized;
         Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            rb.velocity = direction * 10f; // Adjust speed as necessary
+            rb.velocity = direction * projectileSpeed;
         }
 
-        // Destroy the projectile after a certain time
-        Destroy(projectile, projectileLifetime);
+        // Set the shooterTag to "Enemy"
+        Projectile projectileScript = projectile.GetComponent<Projectile>();
+        if (projectileScript != null)
+        {
+            projectileScript.shooterTag = "Enemy";
+        }
     }
 }
