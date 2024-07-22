@@ -1,6 +1,6 @@
 using UnityEngine;
-using TMPro; // Import TextMeshPro namespace
-using UnityEngine.SceneManagement; // For reloading the scene
+using TMPro;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class GameTimer : MonoBehaviour
@@ -12,6 +12,7 @@ public class GameTimer : MonoBehaviour
     public GameObject explosionPrefab; // Reference to the explosion prefab
     public GameObject hostages; // Reference to the hostages GameObject
     public GameObject missionFailedUI; // Reference to the Mission Failed UI GameObject
+    public CameraFollow cameraFollowScript; // Reference to the camera follow script (disable during end sequence)
 
     private bool isTimerRunning = true;
     private bool isEndSequenceTriggered = false;
@@ -40,7 +41,7 @@ public class GameTimer : MonoBehaviour
     {
         float minutes = Mathf.FloorToInt(timeRemaining / 60);
         float seconds = Mathf.FloorToInt(timeRemaining % 60);
-        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+        timerText.text = string.Format("Explosion Timer: {0:00}:{1:00}", minutes, seconds);
     }
 
     void TriggerEndSequence()
@@ -51,6 +52,12 @@ public class GameTimer : MonoBehaviour
 
     IEnumerator MoveCameraAndExplode()
     {
+        // Disable the camera follow script to stop camera movement
+        if (cameraFollowScript != null)
+        {
+            cameraFollowScript.enabled = false;
+        }
+
         // Smoothly move the camera to the hostages' position
         float duration = 2f; // Duration of the camera movement
         Vector3 startPosition = mainCamera.transform.position;
@@ -64,8 +71,24 @@ public class GameTimer : MonoBehaviour
             yield return null;
         }
 
+        // Ensure the camera stays at the hostages' position
+        mainCamera.transform.position = targetPosition;
+
+        // Wait for a moment to emphasize the explosion
+        yield return new WaitForSeconds(1f);
+
         // Trigger explosion and disable hostages
-        Instantiate(explosionPrefab, hostages.transform.position, Quaternion.identity);
+        GameObject explosion = Instantiate(explosionPrefab, hostages.transform.position, Quaternion.identity);
+
+        // Play the explosion sound
+        AudioSource explosionAudio = explosion.GetComponent<AudioSource>();
+        if (explosionAudio != null)
+        {
+            explosionAudio.Play();
+            // Optionally, wait until the sound has finished before deactivating the explosion
+            yield return new WaitForSeconds(explosionAudio.clip.length);
+        }
+
         hostages.SetActive(false);
 
         // Display mission failed UI

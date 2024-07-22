@@ -3,13 +3,19 @@ using UnityEngine;
 public class TopDownPlayerController : MonoBehaviour
 {
     public float moveSpeed = 5f;
+    public AudioClip[] footstepSounds; // Array of footstep sounds
+    public float footstepInterval = 0.5f; // Time interval between footsteps
+    private float nextFootstepTime = 0f;
+
     private Rigidbody2D rb;
-    [SerializeField] private SpriteRenderer spriteRenderer; // Reference to the SpriteRenderer component
+    private SpriteRenderer spriteRenderer;
+    [SerializeField] private AudioSource audioSource;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>(); // Get the SpriteRenderer component
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     private void FixedUpdate()
@@ -25,6 +31,9 @@ public class TopDownPlayerController : MonoBehaviour
 
         // Handle sprite flipping based on movement direction
         HandleSpriteFlip(moveX, moveY);
+
+        // Handle footstep sounds
+        HandleFootsteps(moveX, moveY);
     }
 
     private void HandleSpriteFlip(float moveX, float moveY)
@@ -43,6 +52,25 @@ public class TopDownPlayerController : MonoBehaviour
                 // Example: flip sprite vertically based on direction
                 // You can set different sprites or animations for up/down if needed
                 // For now, we will only flip horizontally
+            }
+        }
+    }
+
+    private void HandleFootsteps(float moveX, float moveY)
+    {
+        bool isMoving = moveX != 0 || moveY != 0;
+
+        // Play footstep sound if moving and it's time to play
+        if (isMoving)
+        {
+            if (Time.time >= nextFootstepTime)
+            {
+                if (footstepSounds.Length > 0)
+                {
+                    AudioClip clip = footstepSounds[Random.Range(0, footstepSounds.Length)];
+                    audioSource.PlayOneShot(clip);
+                    nextFootstepTime = Time.time + footstepInterval;
+                }
             }
         }
     }

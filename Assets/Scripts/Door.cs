@@ -8,6 +8,8 @@ public class Door : MonoBehaviour
     public TMP_InputField codeInputField; // Input field for code entry
     public Button submitButton; // Button to submit code
     public string correctCode; // Unique code for each door
+    public AudioClip openSound; // Sound when the door is opened
+    private AudioSource audioSource; // AudioSource component for playing sounds
 
     private bool isPlayerNear = false; // To track player proximity
 
@@ -18,6 +20,14 @@ public class Door : MonoBehaviour
 
         // Set up button click listener
         submitButton.onClick.AddListener(CheckCode);
+
+        // Get or add an AudioSource component
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        audioSource.playOnAwake = false;
     }
 
     void Update()
@@ -27,6 +37,7 @@ public class Door : MonoBehaviour
         {
             uiPanel.SetActive(true);
             Time.timeScale = 0; // Pause game
+            audioSource.PlayOneShot(openSound);
         }
     }
 
@@ -43,8 +54,7 @@ public class Door : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             isPlayerNear = false;
-            uiPanel.SetActive(false);
-            Time.timeScale = 1; // Resume game
+            HideUIPanel(); // Hide the UI and resume game
         }
     }
 
@@ -57,6 +67,7 @@ public class Door : MonoBehaviour
         else
         {
             Debug.Log("Incorrect Code");
+            HideUIPanel(); // Hide the UI and resume game
         }
     }
 
@@ -64,7 +75,12 @@ public class Door : MonoBehaviour
     {
         // Implement door opening logic
         gameObject.SetActive(false); // Example: Hide the door
-        uiPanel.SetActive(false); // Hide the UI
+        HideUIPanel(); // Hide the UI
+    }
+
+    void HideUIPanel()
+    {
+        uiPanel.SetActive(false);
         Time.timeScale = 1; // Resume game
     }
 }
